@@ -18,7 +18,7 @@ test:
   image: python:3.6
   script:
     - pip3 install pytest
-    - pip3 install dist/*.whl
+    - pip3 install -i https://pypi.mrs.antidot.net/antidot/antibot/+simple/ dist/*.whl
     - pytest tests
 
 push:
