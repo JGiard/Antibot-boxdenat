@@ -165,7 +165,7 @@ class Box(AntibotPlugin):
 
     def display_orders(self, channel: Channel) -> SlackMessage:
         orders = list(self.orders.find_all(today()))
-        timestamp = self.api.post_message(channel.id, Message(self.ui.orders_text(orders)))
+        timestamp = self.api.post_message(channel.id, Message(self.ui.orders_text(orders))).ts
         message = SlackMessage.create_today('orders', timestamp)
         self.messages.create(message)
         return message

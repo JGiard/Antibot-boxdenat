@@ -174,7 +174,7 @@ class Box(AntibotPlugin):
         orders = list(self.orders.find_all(today()))
         for cmd_message in self.messages.find_all('orders', date=today()):
             new_ts = self.api.update_message(channel.id, cmd_message.timestamp,
-                                             Message(text=self.ui.orders_text(orders)))
+                                             Message(text=self.ui.orders_text(orders))).ts
             self.messages.update_timestamp(cmd_message._id, new_ts)
 
     def display_order(self, order: Order) -> str:
