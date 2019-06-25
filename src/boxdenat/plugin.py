@@ -57,7 +57,7 @@ class Box(AntibotPlugin):
                 text += '• {}\n'.format(dessert.name)
 
         action = Action.button('create_order', 'Place an order', 'create_order')
-        attachment = Attachment('create_order', actions=[action])
+        attachment = Attachment('create_order', actions=[action], fallback='---')
         return Message(text, attachments=[attachment])
 
     @command('/box/order')
@@ -148,7 +148,7 @@ class Box(AntibotPlugin):
         cmds = list(self.messages.find_all('orders', date=today()))
         if len(cmds) == 0:
             cmds = [self.display_orders(channel)]
-        link = self.api.get_permalink(channel.id, cmds[-1].timestamp)
+        link = self.api.get_permalink(cmds[-1].channel_id, cmds[-1].timestamp)
         if new_order:
             message = '{} placed an order\n<{}|View all orders>'
         else:
@@ -165,8 +165,8 @@ class Box(AntibotPlugin):
 
     def display_orders(self, channel: Channel) -> SlackMessage:
         orders = list(self.orders.find_all(today()))
-        timestamp = self.api.post_message(channel.id, Message(self.ui.orders_text(orders))).ts
-        message = SlackMessage.create_today('orders', timestamp)
+        reply = self.api.post_message(channel.id, Message(self.ui.orders_text(orders)))
+        message = SlackMessage.create_today('orders', reply.ts, reply.channel)
         self.messages.create(message)
         return message
 
