@@ -1,41 +1,37 @@
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional, Iterator
 from uuid import uuid4
 
-from autovalue import autovalue
+from injector import inject
 from pyckson import rename, serialize, parse
 from pymongo.database import Database
-from pynject import pynject
 
-from antibot.model.user import User
-from antibot.tools import updater, today
+from antibot.tools import today
+from antibot.user import User
 from boxdenat.menu.model import Box, DessertWithFlavor, Soup, Drink
 
 
-@autovalue
-@rename(_id='_id')
-@updater
+@rename(id='_id')
+@dataclass
 class Order:
-    def __init__(self, _id: str, user: User, date: datetime, complete: bool = False, in_edition: bool = True,
-                 boxes: List[Box] = None, desserts: List[DessertWithFlavor] = None, points_given: int = 0,
-                 soups: List[Soup] = None, drinks: List[Drink] = None):
-        self._id = _id
-        self.user = user
-        self.date = date
-        self.complete = complete
-        self.in_edition = in_edition
-        self.boxes = boxes or []
-        self.desserts = desserts or []
-        self.points_given = points_given
-        self.soups = soups or []
-        self.drinks = drinks or []
+    id: str
+    user: User
+    date: datetime
+    complete: bool = False
+    in_edition: bool = True
+    boxes: List[Box] = field(default_factory=list)
+    desserts: List[DessertWithFlavor] = field(default_factory=list)
+    points_given: int = 0
+    soups: List[Soup] = field(default_factory=list)
+    drinks: List[Drink] = field(default_factory=list)
 
     def all_items(self):
         return self.boxes + self.desserts + self.soups + self.drinks
 
 
-@pynject
 class OrderRepository:
+    @inject
     def __init__(self, db: Database):
         self.collection = db['box_orders']
 

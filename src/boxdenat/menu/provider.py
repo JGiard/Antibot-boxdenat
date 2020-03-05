@@ -3,14 +3,14 @@ from typing import List
 import arrow
 import requests
 from bs4 import BeautifulSoup
-from pynject import pynject
+from injector import inject
 
 from boxdenat.menu.model import Menu
 from boxdenat.menu.parser import MenuParser
 
 
-@pynject
 class MenuProvider:
+    @inject
     def __init__(self, parser: MenuParser):
         self.parser = parser
         self.menu = None

@@ -6,7 +6,7 @@ with open('src/boxdenat/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE).group(1)
     assert version is not None
 
-setup(name='boxdenat',
+setup(name='antibot-boxdenat',
       version=version,
       author='Jean Giard',
       license='LGPL',
@@ -14,18 +14,17 @@ setup(name='boxdenat',
           'Programming Language :: Python :: 3'
       ],
       entry_points={
-          'antibot': ['boxdenat=boxdenat.plugin:Box']
+          'antibot': ['boxdenat=boxdenat.plugin:BoxPlugin']
       },
       packages=find_packages(where='src'),
       package_dir={'': 'src'},
       install_requires=[
           'antibot',
           'pymongo',
-          'pynject',
-          'autovalue',
           'pyckson',
           'arrow',
           'requests',
-          'beautifulsoup4'
+          'beautifulsoup4',
+          'injector'
       ],
       )

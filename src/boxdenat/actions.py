@@ -1,17 +1,10 @@
-class OrderAction:
-    add_box = 'add_box'
-    clear_box = 'clear_box'
-    add_dessert = 'add_dessert'
-    clear_dessert = 'clear_dessert'
-    order_confirm = 'order_confirm'
-    order_cancel = 'order_cancel'
-    order_edit = 'order_edit'
-    dismiss = 'dismiss'
-    add_soup = 'add_soup'
-    clear_others = 'clear_others'
-    add_drink = 'add_drink'
-
-
-class PointsAction:
-    free_box = 'free_box'
-    dismiss = 'dismiss'
+class BoxActions:
+    create_order = 'box:create_order'
+    add_box = 'box:add_box'
+    clear_box = 'box:clear_box'
+    add_dessert = 'box:add_dessert'
+    clear_dessert = 'box:clear_dessert'
+    order_confirm = 'box:order_confirm'
+    order_cancel = 'box:order_cancel'
+    order_edit = 'box:order_edit'
+    free_box = 'box:free_box'

@@ -1,7 +1,7 @@
 import re
 from enum import Enum
 
-from pynject import pynject
+from injector import inject
 
 from boxdenat.menu.model import BoxType, Box, MenuBuilder, Soup, Salad, Cheese, Dessert, Drink, Menu
 
@@ -43,8 +43,8 @@ def cleanup_allergen(name):
     return name
 
 
-@pynject
 class MenuParser:
+    @inject
     def __init__(self):
         self.menu = MenuBuilder()
         self.state = ParserState.NONE

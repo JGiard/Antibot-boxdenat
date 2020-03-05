@@ -1,11 +1,12 @@
+from dataclasses import dataclass
 from typing import Iterable
 
+from injector import inject
 from pyckson import parse, serialize
 from pymongo.database import Database
-from pynject import pynject
 
-from antibot.model.user import User
 from antibot.tools import today
+from antibot.user import User
 from boxdenat.orders import Order, OrderRepository
 
 
@@ -25,14 +26,14 @@ def compute_points(order: Order) -> int:
     return int(total)
 
 
+@dataclass
 class UserPoints:
-    def __init__(self, user: User, points: int):
-        self.user = user
-        self.points = points
+    user: User
+    points: int
 
 
-@pynject
 class PointsRepository:
+    @inject
     def __init__(self, db: Database, orders: OrderRepository):
         self.collection = db['box_points']
         self.orders = orders

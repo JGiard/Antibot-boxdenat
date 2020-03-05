@@ -1,53 +1,54 @@
-from typing import List
+from operator import attrgetter
+from typing import Iterable, List
 
-from antibot.model.user import User
-from antibot.slack.message import Option, Action, Attachment, OptionGroup, ActionStyle, Confirmation
-from boxdenat.actions import OrderAction, PointsAction
+from antibot.provided import DISMISS_BUTTON
+from antibot.slack.message import Block, Element, Option, OptionGroup, ActionStyle, Confirm
+from antibot.user import User
+from boxdenat.actions import BoxActions
 from boxdenat.menu.model import Menu
 from boxdenat.orders import Order
+from boxdenat.points import compute_points, UserPoints
 
 
 class BoxUi:
-    def create_order_attachments(self, menu: Menu, order: Order) -> List[Attachment]:
-        options = [Option(box.name, repr(box)) for box in menu.boxes]
-        add_box_action = Action.select(OrderAction.add_box, 'Pick a box...', options)
-        clear_box_action = Action.button(OrderAction.clear_box, 'Clear boxes', 'clear_box')
-        box_attachment = Attachment('update_order_{}'.format(order._id),
-                                    actions=[add_box_action, clear_box_action],
-                                    text='Add a box')
-
-        options = []
-        generic_group = []
+    def menu(self, date: str, menu: Menu) -> Iterable[Block]:
+        text = f'*Menu du {date}*\n'
+        for box in menu.boxes:
+            text += f'• {box} - {box.price}€\n'
+        if menu.soup is not None:
+            text += f'• {menu.soup} - {menu.soup.price}€'
+        text += '\n*Desserts :*\n'
         for dessert in menu.desserts:
             if len(dessert.flavors) > 0:
-                values = [Option(str(df), repr(df)) for df in dessert.iter_flavors()]
-                group = OptionGroup(dessert.name, values)
-                options.append(group)
+                flavors = ', '.join(dessert.flavors)
+                text += f'• {dessert.name} ({flavors})\n'
             else:
-                df = dessert.with_flavor(None)
-                generic_group.append(Option(str(df), repr(df)))
+                text += f'• {dessert.name}\n'
 
-        options.insert(0, OptionGroup('Simple Desserts', generic_group))
-        add_dessert_action = Action.group_select(OrderAction.add_dessert, 'Pick a dessert...', options)
-        clear_dessert_action = Action.button(OrderAction.clear_dessert, 'Clear desserts', 'clear_dessert')
-        dessert_attachment = Attachment('update_order_{}'.format(order._id),
-                                        actions=[add_dessert_action, clear_dessert_action],
-                                        text='Add a dessert')
+        yield Block.section(text)
+        yield Block.actions(
+            Element.button(BoxActions.create_order, 'Place an order')
+        )
 
-        add_soup_action = Action.button(OrderAction.add_soup, 'Take a Soup', 'add_soup')
-        options = [Option(drink.name, repr(drink)) for drink in menu.drinks]
-        add_drink_action = Action.select(OrderAction.add_drink, 'Have a drink...', options)
-        clear_others_action = Action.button(OrderAction.clear_others, 'Clear others', 'clear_others')
-        others_attachment = Attachment('update_order_{}'.format(order._id),
-                                       actions=[add_soup_action, add_drink_action, clear_others_action],
-                                       text='Other options')
+    def order_summary(self, order: Order) -> str:
+        items = order.all_items()
+        total_price = sum(map(attrgetter('price'), items))
+        points = compute_points(order)
+        if len(items) == 0:
+            return 'Your order is empty'
 
-        validate_button = Action.button(OrderAction.order_confirm, 'Validate', 'order_confirm', ActionStyle.primary)
-        cancel_button = Action.button(OrderAction.order_cancel, 'Cancel', 'order_cancel', ActionStyle.danger)
-        edit_button = Action.button(OrderAction.order_edit, 'Modify', 'order_edit', ActionStyle.default)
-        cancel_button_confirm = Action.button(OrderAction.order_cancel, 'Cancel', 'order_cancel', ActionStyle.danger,
-                                              confirm=Confirmation('Really ?'))
-        dismiss_button = Action.button(OrderAction.dismiss, 'Dismiss', 'dismiss')
+        items = [f'• {item}\n' for item in items]
+
+        return ''.join(items) + f'\nTotal price : {total_price}€ ({points} points)'
+
+    def my_order(self, menu: Menu, order: Order) -> Iterable[Block]:
+        yield Block.section(self.order_summary(order))
+
+        validate_button = Element.button(BoxActions.order_confirm, 'Validate', ActionStyle.primary)
+        cancel_button = Element.button(BoxActions.order_cancel, 'Cancel', ActionStyle.danger)
+        edit_button = Element.button(BoxActions.order_edit, 'Modify', ActionStyle.default)
+        cancel_button_confirm = Element.button(BoxActions.order_cancel, 'Cancel', ActionStyle.danger,
+                                               confirm=Confirm.of('Delete order', 'Delete this order', 'Yes', 'No'))
         main_actions = []
         if not order.in_edition:
             main_actions.append(edit_button)
@@ -57,34 +58,49 @@ class BoxUi:
             main_actions.append(cancel_button_confirm)
         else:
             main_actions.append(cancel_button)
-        main_actions.append(dismiss_button)
-        main_attachment = Attachment('update_order_{}'.format(order._id),
-                                     actions=main_actions,
-                                     fallback='Order actions',
-                                     color='warning' if order.in_edition else 'good')
-        attachments = [main_attachment]
-        if order.in_edition:
-            attachments.extend([box_attachment, dessert_attachment, others_attachment])
-        return attachments
+        main_actions.append(DISMISS_BUTTON)
 
-    def orders_text(self, orders: List[Order]) -> str:
-        messages = []
-        total_box = 0
+        yield Block.actions(*main_actions)
+
+        options = [Option.of(str(hash(box)), box.name) for box in menu.boxes]
+        yield Block.actions(
+            Element.select(BoxActions.add_box, 'Pick a box...', options),
+            Element.button(BoxActions.clear_box, 'Clear boxes')
+        )
+
+        options = []
+        generic_group = []
+        for dessert in menu.desserts:
+            if len(dessert.flavors) > 0:
+                values = [Option.of(str(hash(df)), str(df)) for df in dessert.iter_flavors()]
+                group = OptionGroup.of(dessert.name, values)
+                options.append(group)
+            else:
+                df = dessert.with_flavor(None)
+                generic_group.append(Option.of(str(hash(df)), str(df)))
+
+        options.insert(0, OptionGroup.of('Simple Desserts', generic_group))
+        yield Block.actions(
+            Element.group_select(BoxActions.add_dessert, 'Pick a dessert...', options),
+            Element.button(BoxActions.clear_dessert, 'Clear desserts')
+        )
+
+    def all_orders(self, orders: List[Order]) -> Iterable[Block]:
         for order in orders:
-            text = '*{}*\n'.format(order.user.display_name)
-            text += ''.join(['• {}\n'.format(item) for item in order.all_items()])
-            total_box += len(order.boxes)
-            messages.append(text)
-        message = '----------\n'.join(messages)
-        return message
+            text = f'*{order.user.display_name}*\n'
+            text += '\n'.join([f'• {item}' for item in order.all_items()])
+            yield Block.section(text)
+            yield Block.divider()
 
-    def create_points_attachment(self, pref_user: User) -> List[Attachment]:
-        free_box_button = Action.button(PointsAction.free_box, 'Give a free box', 'free_box', ActionStyle.primary,
-                                        confirm=Confirmation(
-                                            text='Give a free box to {}'.format(pref_user.display_name),
-                                            title='Free Box'
-                                        ))
-        dismiss_button = Action.button(PointsAction.dismiss, 'Dismiss', 'dismiss')
+    def points(self, pref_user: User, user_points: Iterable[UserPoints]) -> Iterable[Block]:
+        text = [f'• {up.user.display_name} : {up.points} points' for up in user_points]
+        yield Block.section('\n'.join(text))
 
-        attachment = Attachment('points_actions', actions=[free_box_button, dismiss_button], fallback='Free box')
-        return [attachment]
+        yield Block.actions(
+            Element.button(BoxActions.free_box, 'Give a free box', ActionStyle.primary,
+                           confirm=Confirm.of('Free Box',
+                                              f'Give a free box to {pref_user.display_name}',
+                                              'Yes', 'No')),
+            DISMISS_BUTTON
+        )
+

@@ -1,3 +1,3 @@
 def test_import():
-    from boxdenat.plugin import Box
-    print(Box)
+    from boxdenat.plugin import BoxPlugin
+    print(BoxPlugin)
