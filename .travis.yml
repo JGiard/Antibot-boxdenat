@@ -1,0 +1,20 @@
+language: python
+python:
+  - '3.7'
+  - '3.8'
+install:
+  - pip install -r requirements.txt
+script:
+  - pip install .
+  - cd tests && python3 -m pytest
+before_deploy:
+  - cd ..
+deploy:
+  provider: pypi
+  user: __token__
+  password:
+    secure: Q+gX37or2jXKU+GMgFLaDn6IaPJ+vLd3N/3K9+NmqPADUoTFbJ1RRyVYCU+boJNLDlISHUzKisL85A29jKw9ZiW3ldJNH5c9UQs8Ca5qKo4nnbf+aT08Ya8yqoSafNofszufS8UA8EP90eCLgY2I2WcWrHQjDmTMcrfk/BgG9G6M9mDknRRZBMswWWusgD9IO/CrUwsZhIdpWEP5Pdr+FYNJL+pMH0DKIFPPyBHEU0a1wRW4h24M/m4ymHr03RQ69iYd1Kd7ghB2zx/ZKgeknHcK9+RUKrA/Kz/16ZHEa0wdPuylcF1Ah8FR/onfLA6nR1B2R/ruOLGBfuJzAyNVPyiZwm8R7KKVXxslEzJB2ZyRY4UfSvsBcPJri/1avgaf4oGQ5tAYZgkE5Jmb0fh1bl62xEcGKyv/e2IkXmCXxyz7+HEf5oX9wVElUG89i9dCrPcWOEpaJeto9/XHiKOoayIEt9nu/0W+FCoo3hpahCzR17Zhv8xibz73Zu1g0/dXhNF1uQtnFzJ15XX+x/ZHCP5UHVGzeqBJNKhe/6PZ1wI9wsRdnM0W3h9w2w4hKAC6ya/9eb0fuGdBH4fPBDP6inS6M7Sq44SvUaI3zhBRqB7nKFfvE8wu6zUuTWzcRah1K4IddP4ez/ZZCD87znh8ms4ngH75VFoNFV9oA+IlZ14=
+  on:
+    tags: true
+  distributions: sdist bdist_wheel
+  skip_existing: true

@@ -1,0 +1,8 @@
+antibot
+pymongo
+pyckson
+arrow
+requests
+beautifulsoup4
+injector
+pytest
