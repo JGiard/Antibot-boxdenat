@@ -1,14 +1,13 @@
 import statistics
 from dataclasses import dataclass
-from typing import Iterable
-
-from injector import inject
-from pyckson import parse, serialize
-from pymongo.database import Database
+from typing import Iterable, Optional
 
 from antibot.tools import today
 from antibot.user import User
 from boxdenat.orders import Order, OrderRepository
+from injector import inject
+from pyckson import parse, serialize
+from pymongo.database import Database
 
 
 def compute_points(order: Order) -> int:
@@ -53,7 +52,7 @@ class PointsRepository:
 
     def update(self, user: User, add_points: int):
         self.get(user)
-        self.collection.update({'user.id': user.id}, {'$inc': {'points': add_points}})
+        self.collection.update_one({'user.id': user.id}, {'$inc': {'points': add_points}})
 
     def create(self, user: User, points: int) -> UserPoints:
         up = UserPoints(user, points)
@@ -64,6 +63,8 @@ class PointsRepository:
         for doc in self.collection.find(sort=[('points', -1)]):
             yield parse(UserPoints, doc)
 
-    def pref_user(self) -> UserPoints:
+    def pref_user(self) -> Optional[UserPoints]:
         today_users = [order.user.id for order in self.orders.find_all(today())]
-        return [up for up in self.find_all() if up.user.id in today_users][0]
+        candidates = [up for up in self.find_all() if up.user.id in today_users]
+        if candidates:
+            return candidates[0]

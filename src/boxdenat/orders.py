@@ -3,13 +3,12 @@ from datetime import datetime
 from typing import List, Optional, Iterator
 from uuid import uuid4
 
-from injector import inject
-from pyckson import rename, serialize, parse
-from pymongo.database import Database
-
 from antibot.tools import today
 from antibot.user import User
 from boxdenat.menu.model import Box, DessertWithFlavor, Soup, Drink
+from injector import inject
+from pyckson import rename, serialize, parse
+from pymongo.database import Database
 
 
 @rename(id='_id')
@@ -41,7 +40,7 @@ class OrderRepository:
         return order
 
     def update(self, order: Order):
-        self.collection.update({'_id': order._id}, serialize(order))
+        self.collection.replace_one({'_id': order.id}, serialize(order))
 
     def get(self, order_id: str) -> Optional[Order]:
         document = self.collection.find_one({'_id': order_id})

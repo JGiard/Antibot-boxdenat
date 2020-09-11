@@ -87,7 +87,7 @@ class BoxPlugin(AntibotPlugin):
 
     def find_dessert(self, id) -> Optional[DessertWithFlavor]:
         for dessert in self.menu.all_desserts():
-            if repr(dessert) == id:
+            if str(hash(dessert)) == id:
                 return dessert
 
         return None
@@ -152,6 +152,7 @@ class BoxPlugin(AntibotPlugin):
     def order_edit(self, user: User):
         order = self.orders.find(today(), user)
         order = replace(order, in_edition=True)
+        self.orders.update(order)
         return Message.replace(self.ui.my_order(self.menu, order))
 
     @daily(hour='02:00')
@@ -163,7 +164,7 @@ class BoxPlugin(AntibotPlugin):
 
     @command('/box/points')
     def display_points(self):
-        return Message(blocks=list(self.ui.points(self.points.pref_user().user, self.points.find_all())))
+        return Message(blocks=list(self.ui.points(self.points.pref_user(), self.points.find_all())))
 
     @block_action(action_id=BoxActions.free_box)
     def free_box(self, channel: Channel):

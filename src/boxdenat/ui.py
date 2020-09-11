@@ -3,7 +3,6 @@ from typing import Iterable, List
 
 from antibot.provided import DISMISS_BUTTON
 from antibot.slack.message import Block, Element, Option, OptionGroup, ActionStyle, Confirm
-from antibot.user import User
 from boxdenat.actions import BoxActions
 from boxdenat.menu.model import Menu
 from boxdenat.orders import Order
@@ -46,7 +45,7 @@ class BoxUi:
 
         validate_button = Element.button(BoxActions.order_confirm, 'Validate', ActionStyle.primary)
         cancel_button = Element.button(BoxActions.order_cancel, 'Cancel', ActionStyle.danger)
-        edit_button = Element.button(BoxActions.order_edit, 'Modify', ActionStyle.default)
+        edit_button = Element.button(BoxActions.order_edit, 'Modify')
         cancel_button_confirm = Element.button(BoxActions.order_cancel, 'Cancel', ActionStyle.danger,
                                                confirm=Confirm.of('Delete order', 'Delete this order', 'Yes', 'No'))
         main_actions = []
@@ -61,6 +60,9 @@ class BoxUi:
         main_actions.append(DISMISS_BUTTON)
 
         yield Block.actions(*main_actions)
+
+        if not order.in_edition:
+            return
 
         options = [Option.of(str(hash(box)), box.name) for box in menu.boxes]
         yield Block.actions(
@@ -92,15 +94,21 @@ class BoxUi:
             yield Block.section(text)
             yield Block.divider()
 
-    def points(self, pref_user: User, user_points: Iterable[UserPoints]) -> Iterable[Block]:
+    def points(self, pref_user: UserPoints, user_points: Iterable[UserPoints]) -> Iterable[Block]:
         text = [f'• {up.user.display_name} : {up.points} points' for up in user_points]
-        yield Block.section('\n'.join(text))
+        if text:
+            yield Block.section('\n'.join(text))
+        else:
+            yield Block.section('No points')
 
-        yield Block.actions(
-            Element.button(BoxActions.free_box, 'Give a free box', ActionStyle.primary,
-                           confirm=Confirm.of('Free Box',
-                                              f'Give a free box to {pref_user.display_name}',
-                                              'Yes', 'No')),
-            DISMISS_BUTTON
-        )
+        if pref_user:
+            yield Block.actions(
+                Element.button(BoxActions.free_box, 'Give a free box', ActionStyle.primary,
+                               confirm=Confirm.of('Free Box',
+                                                  f'Give a free box to {pref_user.user.display_name}',
+                                                  'Yes', 'No')),
+                DISMISS_BUTTON
+            )
 
+        else:
+            yield Block.actions(DISMISS_BUTTON)
