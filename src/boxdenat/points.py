@@ -1,3 +1,4 @@
+import statistics
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -16,10 +17,10 @@ def compute_points(order: Order) -> int:
         total -= box.price * 10
         total += 85
     if len(order.desserts) > 0:
-        total -= 10
+        total -= 12
         total -= len(order.desserts[1:]) * 15
     if len(order.drinks) > 0:
-        total -= 10
+        total -= 12
         total -= len(order.drinks[1:]) * 15
     for soup in order.soups:
         total -= soup.price * 10
@@ -41,8 +42,14 @@ class PointsRepository:
     def get(self, user: User) -> UserPoints:
         document = self.collection.find_one({'user.id': user.id})
         if document is None:
-            return self.create(user, 0)
+            return self.create(user, self.avg())
         return parse(UserPoints, document)
+
+    def avg(self):
+        points = [parse(UserPoints, doc).points for doc in self.collection.find()]
+        if points:
+            return int(statistics.mean(points))
+        return 0
 
     def update(self, user: User, add_points: int):
         self.get(user)
