@@ -68,3 +68,9 @@ class PointsRepository:
         candidates = [up for up in self.find_all() if up.user.id in today_users]
         if candidates:
             return candidates[0]
+
+    def least_user(self) -> Optional[UserPoints]:
+        today_users = [order.user.id for order in self.orders.find_all(today())]
+        candidates = [up for up in reversed(list(self.find_all())) if up.user.id in today_users]
+        if candidates:
+            return candidates[0]

@@ -9,7 +9,7 @@ from antibot.plugin import AntibotPlugin
 from antibot.repository.messages import MessagesRepository, SlackMessage
 from antibot.slack.api import SlackApi
 from antibot.slack.callback import BlockAction
-from antibot.slack.message import Message
+from antibot.slack.message import Message, Block
 from antibot.tools import today, yesterday
 from antibot.user import User
 from boxdenat.actions import BoxActions
@@ -36,13 +36,46 @@ class BoxPlugin(AntibotPlugin):
     def menu(self):
         return self.menu_provider.get()
 
+    @command('/box')
+    def main(self, user: User, channel: Channel, params: str):
+        params = params.split(' ')
+
+        cmd = params[0]
+        args = params[1:]
+        if cmd == 'menu':
+            return self.display_menu()
+        elif cmd == 'order':
+            return self.create_new_order(user)
+        elif cmd == 'call':
+            return self.display_orders(channel)
+        elif cmd == 'points':
+            return self.display_points()
+        elif cmd == 'free':
+            return self.free_box()
+        elif cmd == 'charge':
+            return self.charge_box()
+        else:
+            return self.display_help()
+
+    def display_help(self):
+        return Message.ephemeral([
+            Block.section('''*Available commands :*
+            • help : display this message
+            • menu : display today's menu
+            • order : place an order
+            • call : display current orders
+            • points : display points
+            • free : there is a free box available
+            • charge : an additional TR is required
+            ''')
+        ])
+
     @command('/box/menu')
     def display_menu(self):
         self.menu_provider.get()
         blocks = self.ui.menu(self.menu_provider.date, self.menu)
         return Message(f'Menu for {self.menu_provider.date}', blocks=list(blocks))
 
-    @command('/box/order')
     @block_action(action_id=BoxActions.create_order)
     def create_new_order(self, user: User):
         order = self.orders.find(today(), user)
@@ -162,16 +195,18 @@ class BoxPlugin(AntibotPlugin):
         for message in self.messages.find_all(type='orders', date=yesterday()):
             self.messages.delete(message.id)
 
-    @command('/box/points')
     def display_points(self):
         return Message(blocks=list(self.ui.points(self.points.pref_user(), self.points.find_all())))
 
     @block_action(action_id=BoxActions.free_box)
-    def free_box(self, channel: Channel):
+    def free_box(self):
         pref_user = self.points.pref_user()
         self.points.update(pref_user.user, -85)
-        return Message(f'A free box for {pref_user.user.display_name}', replace_original=True)
+        return Message(f'<@{pref_user.user.id}> receives a free box and had 85 points deducted',
+                       replace_original=True)
 
-    @command('/box/call')
-    def display_call(self, channel: Channel):
-        self.display_orders(channel)
+    def charge_box(self):
+        pref_user = self.points.pref_user()
+        self.points.update(pref_user.user, 85)
+        return Message(f'<@{pref_user.user.id}> needs to pay an additional TR and was credited 85 points',
+                       replace_original=True)
