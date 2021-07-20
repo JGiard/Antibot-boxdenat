@@ -128,7 +128,7 @@ class BoxPlugin(AntibotPlugin):
     @block_action(action_id=BoxActions.clear_dessert)
     def clear_dessert(self, user: User):
         order = self.orders.find(today(), user)
-        order = replace(order, boxes=[])
+        order = replace(order, desserts=[])
         self.orders.update(order)
 
         return Message.replace(self.ui.my_order(self.menu, order))
@@ -141,6 +141,8 @@ class BoxPlugin(AntibotPlugin):
         order = replace(order, complete=True, in_edition=False, points_given=points)
         self.orders.update(order)
         self.complete_order(channel, user, new_order)
+
+        return Message.replace(self.ui.my_order(self.menu, order))
 
     def update_points(self, order: Order) -> int:
         order_points = compute_points(order)
