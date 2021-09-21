@@ -208,7 +208,7 @@ class BoxPlugin(AntibotPlugin):
                        replace_original=True)
 
     def charge_box(self):
-        pref_user = self.points.pref_user()
+        pref_user = self.points.least_user()
         self.points.update(pref_user.user, 85)
         return Message(f'<@{pref_user.user.id}> needs to pay an additional TR and was credited 85 points',
                        replace_original=True)
